@@ -51,7 +51,6 @@ jobs:
         with:
           name: RFU_Bluetooth_Plugin
           path: |
-            build/Release/RFU_Bluetooth_Plugin.dll
-            # 显示可能的备选路径（如果主路径找不到）
-            build/**/Release/RFU_Bluetooth_Plugin.dll
+            build/Release/BluetoothExt.dll  # 正确的文件名（匹配CMake定义）
+            build/**/Release/BluetoothExt.dll  # 备选路径也同步修正
           if-no-files-found: error  # 若文件不存在则报错
