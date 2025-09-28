@@ -1,0 +1,41 @@
+name: Compile RFU Bluetooth Plugin
+
+on:
+  push:
+    branches: [ dev ]  # 推送代码到main分支时触发编译
+  workflow_dispatch:  # 允许手动触发编译
+
+jobs:
+  build:
+    runs-on: windows-latest  # 使用GitHub的Windows虚拟机
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4  # 拉取仓库代码
+
+    - name: Install CMake
+      uses: lukka/get-cmake@v3.27  # 安装CMake
+
+    - name: Set up Visual Studio environment
+      uses: microsoft/setup-msbuild@v1.3.1  # 配置Visual Studio编译环境
+
+    - name: Create build directory
+      run: |
+        mkdir build
+        cd build
+
+    - name: Configure CMake
+      run: |
+        cd build
+        cmake -G "Visual Studio 17 2022" -A x64 ..  # 使用VS2022生成64位项目
+
+    - name: Build project
+      run: |
+        cd build
+        cmake --build . --config Release  # 编译Release版本
+
+    - name: Upload compiled DLL
+      uses: actions/upload-artifact@v3  # 上传编译产物
+      with:
+        name: RFU_Bluetooth_Plugin
+        path: build/Release/RFU_Bluetooth_Plugin.dll  # 编译后DLL的路径
