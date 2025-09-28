@@ -1,43 +1,57 @@
 name: Compile RFU Bluetooth Plugin
 
 on:
-  push:
-    branches: [ main ]
-  workflow_dispatch:
+  workflow_dispatch:  # 仅允许手动触发，便于调试
 
 jobs:
   build:
-    runs-on: windows-2022  # 明确指定Windows版本，避免迁移问题
-    # 替代windows-latest，避免未来自动迁移到Server 2025可能的兼容问题
-
+    runs-on: windows-2022
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
+      - name: Checkout code
+        uses: actions/checkout@v4
 
-    - name: Install CMake
-      uses: lukka/get-cmake@v3  # 使用最新的v3版本（替代不存在的v3.27）
-      # 该版本会自动获取最新的CMake稳定版
+      - name: Install CMake
+        uses: lukka/get-cmake@v3
 
-    - name: Set up Visual Studio environment
-      uses: microsoft/setup-msbuild@v1.3.1
+      - name: Set up Visual Studio
+        uses: microsoft/setup-msbuild@v1.3.1
 
-    - name: Create build directory
-      run: |
-        mkdir build
-        cd build
+      - name: Create build directory
+        run: |
+          mkdir -p build
+          cd build
+          pwd  # 输出当前路径，便于调试
+        shell: bash  # 使用bash语法确保兼容性
 
-    - name: Configure CMake
-      run: |
-        cd build
-        cmake -G "Visual Studio 17 2022" -A x64 ..
+      - name: Configure CMake
+        run: |
+          cd build
+          cmake -G "Visual Studio 17 2022" -A x64 ..
+          if [ $? -ne 0 ]; then
+            echo "CMake配置失败"
+            exit 1
+          fi
+        shell: bash
 
-    - name: Build project
-      run: |
-        cd build
-        cmake --build . --config Release
+      - name: Build project
+        run: |
+          cd build
+          cmake --build . --config Release
+          if [ $? -ne 0 ]; then
+            echo "编译失败"
+            exit 1
+          fi
+          # 检查是否生成DLL文件
+          ls -la Release/  # 列出Release目录内容，确认DLL是否存在
+        shell: bash
 
-    - name: Upload compiled DLL
-      uses: actions/upload-artifact@v4  # 升级到最新的v4版本（解决弃用问题）
-      with:
-        name: RFU_Bluetooth_Plugin
-        path: build/Release/RFU_Bluetooth_Plugin.dll
+      - name: Upload compiled DLL
+        uses: actions/upload-artifact@v4
+        if: success()  # 仅在编译成功时上传
+        with:
+          name: RFU_Bluetooth_Plugin
+          path: |
+            build/Release/RFU_Bluetooth_Plugin.dll
+            # 显示可能的备选路径（如果主路径找不到）
+            build/**/Release/RFU_Bluetooth_Plugin.dll
+          if-no-files-found: error  # 若文件不存在则报错
